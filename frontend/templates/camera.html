@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="/static/camera.css">
+
+<div class="camera-toolbar">
+    <a class="btn light" href="/">Назад</a>
+    <button class="btn green" onclick="window.location.reload()">Перезагрузить камеру</button>
+</div>
+
+<div class="camera-wrapper single-physical-camera">
+    <div class="camera-panel">
+        <img src="/camera_feed?status=keldi" id="cameraInStream" alt="Физическая камера">
+        <div class="camera-title green">Физическая камера — Приход (Кирүү)</div>
+    </div>
+</div>
+
+<style>
+    .camera-wrapper.single-physical-camera {
+        grid-template-columns: 1fr;
+    }
+
+    .single-physical-camera .camera-panel {
+        border-right: 0;
+    }
+</style>

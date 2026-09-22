@@ -1,0 +1,5 @@
+2026/09/11-13:42:41.285 3cb4 Creating DB C:\Users\user\fice_amanat\chrome_flutter_kept_open\Default\Local Storage\leveldb since it was missing.
+2026/09/11-13:42:41.305 3cb4 Reusing MANIFEST C:\Users\user\fice_amanat\chrome_flutter_kept_open\Default\Local Storage\leveldb/MANIFEST-000001
+2026/09/11-15:34:58.883 1488 Level-0 table #5: started
+2026/09/11-15:34:58.892 1488 Level-0 table #5: 65565 bytes OK
+2026/09/11-15:34:58.894 1488 Delete type=0 #3
