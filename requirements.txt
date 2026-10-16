@@ -1,7 +1,1 @@
-fastapi
-uvicorn[standard]
-python-multipart
-opencv-python<5
-numpy
-insightface
-onnxruntime
+-r backend/requirements.txt

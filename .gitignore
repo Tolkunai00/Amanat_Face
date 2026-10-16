@@ -1,20 +1,58 @@
 __pycache__/
 *.py[cod]
 *.log
+*.out
+*.err
+*.pid
 .venv/
 venv/
 env/
 .idea/
 .vscode/
 .worktrees/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-# Runtime data. Keep existing data safe, but do not add new generated files by accident.
-screenshots/
-face_database/
+# Frontend dependencies and builds.
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Runtime data: never commit student biometrics or local state.
+/data/
+/face_database/
+/screenshots/
+/storage/
+/tmp/
+/logs/
 school.db
+*.db
 *.db-journal
 *.db-shm
 *.db-wal
 .env
+.env.docker
+backend/.env
+frontend/.env
+.env.prod
+/deploy/secrets/
+/deploy/certs/
+/deploy/models/
+
+# Private biometric validation evidence; keep only protocol documentation.
+/backend/recognition_validation/**
+!/backend/recognition_validation/README.md
+/backend/pad_validation/**
+!/backend/pad_validation/README.md
+
+# Browser profiles and generated visual verification artifacts.
+chrome_*/
+chrome_flutter_*/
+chrome_render_*/
+flutter_*.png
+
 EzvizStudioSetups.exe
-EzvizStudioSetups.exe
+
+# Local migration snapshots.
+/archive/

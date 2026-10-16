@@ -1,144 +1,98 @@
-# School Face ID
+# Amanat School Face ID
 
-Backend and web interface for a school attendance system with face
-recognition.
-
-## Start
-
-The original launch commands are preserved:
-
-```powershell
-python admin_panel.py
-```
-
-or:
-
-```powershell
-.\start_server.bat
-```
-
-The main implementation is organized under `app/`. Root Python files and the
-old `school_face_id/` package are compatibility entry points, so existing
-commands and imports continue to work.
-
-## Project structure
+The active repository is split into independently deployable applications.
 
 ```text
-fice_amanat/
-├── app/
-│   ├── __init__.py
-│   ├── core/
-│   │   ├── __init__.py
-│   │   └── settings.py
-│   ├── database/
-│   │   ├── __init__.py
-│   │   ├── database.py
-│   │   └── face_database.py
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── camera_service.py
-│   └── admin/
-│       ├── __init__.py
-│       └── admin_panel.py
-│
-├── frontend/
-│   ├── __init__.py
-│   ├── views.py
-│   ├── template_loader.py
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── camera.html
-│   │   └── error.html
-│   └── static/
-│       ├── styles.css
-│       └── camera.css
-│
-├── data/
-│   └── school.db
-├── face_database/
-├── screenshots/
-├── tmp/
-├── logs/
-│   ├── server-runtime.log
-│   ├── server-runtime-error.log
-│   └── server.err
-├── scripts/
-│   └── start_server.bat
-│
-├── school_face_id/          # Compatibility package for old imports
-├── admin_panel.py           # Compatibility server entry point
-├── camera_service.py        # Compatibility import
-├── database.py              # Compatibility import
-├── fase_database.py         # Compatibility import/entry point
-├── settings.py              # Compatibility import
-├── views.py                 # Compatibility import
-├── start_server.bat         # Compatibility Windows launcher
-├── .env.example
-├── .gitignore
-├── requirements.txt
-└── README.md
+backend/   FastAPI API, PostgreSQL, cameras and InsightFace
+frontend/  Vite UI; the development server proxies /api/v1
+flutter/   location for the Flutter client
 ```
 
-The service folders `.agents/` and `.idea/` remain at the project root because
-they belong to development tools, not to the Python application.
+## Development: Vite + Docker backend
 
-## Responsibilities
-
-- `app/core/settings.py` — environment configuration and absolute project
-  paths.
-- `app/database/database.py` — SQLite tables, queries and attendance rules.
-- `app/database/face_database.py` — one-time photo import utility.
-- `app/services/camera_service.py` — cameras, InsightFace, recognition and
-  liveness checks.
-- `app/admin/admin_panel.py` — FastAPI application, routes and authorization.
-- `frontend/views.py` — dynamic server-rendered HTML.
-- `frontend/templates/` — standalone HTML templates.
-- `frontend/static/` — CSS files.
-- `data/school.db` — persistent SQLite data.
-- `face_database/` — persistent student photos.
-- `screenshots/` — persistent recognition screenshots.
-- `logs/` — server log files.
-- `scripts/start_server.bat` — Windows launcher implementation.
-
-## Dependency flow
-
-```text
-admin_panel
-├── frontend
-├── camera_service
-│   ├── database
-│   └── settings
-├── database
-│   └── settings
-└── settings
-
-face_database importer
-├── camera_service
-├── database
-└── settings
-```
-
-All application data paths are resolved from the repository root with
-`pathlib.Path`, so starting `admin_panel.py` does not depend on the current
-working directory.
-
-## Production
-
-Environment variable names and values remain unchanged. Example:
+Create the private environment file once:
 
 ```powershell
-$env:PRODUCTION="1"
-$env:APP_PORT="8000"
-$env:APP_AUTO_PORT="0"
-$env:TEACHER_PASSWORD="your-strong-teacher-password"
-$env:ADMIN_PASSWORD="your-strong-admin-password"
-$env:ADMIN_TOKEN="your-long-random-admin-token"
-$env:ALLOWED_ORIGINS="http://127.0.0.1:8000,http://localhost:8000"
-python admin_panel.py
+Copy-Item .env.docker.example .env.docker
+notepad .env.docker
 ```
 
-Back up these paths regularly:
+Replace both example passwords. Then start the complete stack:
 
-- `data/school.db`
-- `face_database/`
-- `screenshots/`
+```powershell
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker ps
+```
+
+Open `http://localhost:5173`. FastAPI is also published at
+`http://127.0.0.1:8080`; PostgreSQL remains private to the Compose network.
+Backend source code is bind-mounted and Uvicorn reloads it after changes.
+PostgreSQL data and the InsightFace model cache use named volumes; face images,
+screenshots and logs use local runtime directories.
+
+For frontend development with Vite hot reload, stop the packaged frontend first:
+
+```powershell
+docker compose --env-file .env.docker stop frontend
+Set-Location frontend
+npm install
+npm run dev
+```
+
+Keep `VITE_API_BASE_URL` empty in development;
+Vite proxies `/api/*` to the Docker backend on port 8080.
+
+Stop without deleting data:
+
+```powershell
+docker compose --env-file .env.docker down
+```
+
+Do not add `-v` unless you intentionally want to delete the PostgreSQL and
+biometric volumes. Docker Desktop must be running. For WSL commands, enable
+Docker Desktop > Settings > Resources > WSL Integration.
+
+## Backend process without Docker (optional)
+
+PostgreSQL is required. Set `DATABASE_URL` to a reachable PostgreSQL database
+before starting the Python process; the backend no longer creates SQLite files.
+
+```powershell
+$env:DATABASE_URL = 'postgresql+psycopg://amanat:PASSWORD@127.0.0.1:5432/amanat'
+python backend\run.py
+```
+
+Default addresses:
+
+- frontend: use the exact address printed by Vite (normally `http://localhost:5173`);
+- backend: `http://127.0.0.1:8080`;
+- API docs: `http://127.0.0.1:8080/docs`.
+
+Vite proxies API requests to the backend so the HttpOnly login cookie remains
+same-origin.
+
+## Database migrations
+
+Alembic owns schema changes and PostgreSQL is the only runtime database. The
+backend requires `DATABASE_URL`, applies pending migrations at startup, and can
+also run them explicitly:
+
+```powershell
+cd backend
+python -m alembic upgrade head
+```
+
+Back up PostgreSQL before every migration. Do not store database dumps in Git.
+The Compose `backup` service creates a daily dump and performs a real restore
+check. See [PostgreSQL backup and restore](docs/postgres-backup-restore.md).
+
+## Runtime data
+
+`data/`, `face_database/`, `screenshots/`, `logs/`, and `tmp/` are runtime
+storage and are ignored by Git. They must never be served as public static
+folders.
+
+See [docs/architecture.md](docs/architecture.md).
+Before a real deployment, complete the [production readiness checklist](docs/production-readiness.md).
+Use the separate [production deployment guide](deploy/README.md) for HTTPS,
+Docker secrets, monitoring and smoke tests.

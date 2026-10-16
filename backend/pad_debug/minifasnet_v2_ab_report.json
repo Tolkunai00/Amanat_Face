@@ -1,0 +1,634 @@
+{
+  "diagnostic_only": true,
+  "production_settings_changed": false,
+  "threshold_selected": false,
+  "live_index_changed": false,
+  "upstream": {
+    "repository": "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing",
+    "model": "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing/blob/master/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth",
+    "architecture": "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing/blob/master/src/model_lib/MiniFASNet.py",
+    "crop": "https://github.com/minivision-ai/Silent-Face-Anti-Spoofing/blob/master/src/generate_patches.py"
+  },
+  "artifacts": {
+    "onnx": "C:\\Users\\user\\PycharmProjects\\Amanat_Face\\deploy\\models\\anti_spoof.onnx",
+    "onnx_sha256": "d7b3cd9ba8a7ceb13baa8c4720902e27ca3112eff52f926c08804af6b6eecc7b",
+    "pth": "C:\\Users\\user\\PycharmProjects\\Amanat_Face\\tmp\\2.7_80x80_MiniFASNetV2.pth",
+    "pth_sha256": "a5eb02e1843f19b5386b953cc4c9f011c3f985d0ee2bb9819eea9a142099bec0"
+  },
+  "checks": {
+    "architecture": "MiniFASNetV2 / keep_dict['1.8M_'] / 3 classes",
+    "state_dict_loading": "strict=True",
+    "conv6_kernel_expected": [
+      5,
+      5
+    ],
+    "conv6_kernel_actual": [
+      5,
+      5
+    ],
+    "eval_mode": true,
+    "tensor_order": "NCHW, BGR channels, float32 divided by 255",
+    "onnx_input": {
+      "name": "input",
+      "shape": [
+        "batch",
+        3,
+        80,
+        80
+      ],
+      "type": "tensor(float)"
+    },
+    "onnx_output": {
+      "name": "output",
+      "shape": [
+        "batch",
+        3
+      ],
+      "type": "tensor(float)"
+    },
+    "export_assumption": "ONNX output and upstream model output are raw logits",
+    "shared_input_copy_per_runtime": true,
+    "reference_mode": "official CropImage geometry + OpenCV resize + upstream ToTensor semantics",
+    "crop_difference_metric": "max absolute difference between normalized 1x3x80x80 tensors"
+  },
+  "files": [
+    {
+      "file": "live/photo_2026-10-01_13-46-02.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.0003223193875171726,
+        0.005696334324692296,
+        0.9939813462877906
+      ],
+      "pth_probs": [
+        0.00032231793271459075,
+        0.005696319478896245,
+        0.9939813625883892
+      ],
+      "probability_diff": 1.6300598648655296e-08,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        808,
+        984,
+        975,
+        1209
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        666,
+        792,
+        1117,
+        1401
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        666,
+        792,
+        1116,
+        1400
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.6349997520446777,
+        -0.7629645466804504,
+        4.39893102645874
+      ],
+      "pth_logits": [
+        -3.6350018978118896,
+        -0.7629647850990295,
+        4.398933410644531
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 2.384185791015625e-06
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-06.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.0003244408854463252,
+        0.006029406533625831,
+        0.9936461525809278
+      ],
+      "pth_probs": [
+        0.0003244402720726894,
+        0.006029390462758024,
+        0.9936461692651692
+      ],
+      "probability_diff": 1.6684241432862734e-08,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        902,
+        1058,
+        1072,
+        1301
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        757,
+        851,
+        1217,
+        1508
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        757,
+        851,
+        1216,
+        1507
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.649465799331665,
+        -0.7271652817726135,
+        4.377567291259766
+      ],
+      "pth_logits": [
+        -3.649465799331665,
+        -0.7271660566329956,
+        4.377569198608398
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 1.9073486328125e-06
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-10.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.0002899913044623568,
+        0.005234046951535304,
+        0.9944759617440024
+      ],
+      "pth_probs": [
+        0.0002899908209897834,
+        0.005234045712706095,
+        0.9944759634663042
+      ],
+      "probability_diff": 1.7223017456657885e-09,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        789,
+        1080,
+        946,
+        1298
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        655,
+        894,
+        1080,
+        1484
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        655,
+        894,
+        1079,
+        1483
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.677403211593628,
+        -0.7843140959739685,
+        4.462717056274414
+      ],
+      "pth_logits": [
+        -3.6774039268493652,
+        -0.7843133807182312,
+        4.4627180099487305
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 9.5367431640625e-07
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-13.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.0004249235471947589,
+        0.007233162480055783,
+        0.9923419139727494
+      ],
+      "pth_probs": [
+        0.000424923244494192,
+        0.007233159914184725,
+        0.9923419168413212
+      ],
+      "probability_diff": 2.868571824521382e-09,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        940,
+        949,
+        1082,
+        1161
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        819,
+        768,
+        1203,
+        1342
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        819,
+        768,
+        1202,
+        1341
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.529839038848877,
+        -0.6953166723251343,
+        4.226074695587158
+      ],
+      "pth_logits": [
+        -3.5298397541046143,
+        -0.6953170299530029,
+        4.226074695587158
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 7.152557373046875e-07
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-18.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.00035530838274208817,
+        0.005998806097517852,
+        0.99364588551974
+      ],
+      "pth_probs": [
+        0.00035530770719220607,
+        0.005998800770408675,
+        0.993645891522399
+      ],
+      "probability_diff": 6.002659036496993e-09,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        884,
+        928,
+        1045,
+        1140
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        747,
+        747,
+        1182,
+        1321
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        747,
+        747,
+        1181,
+        1320
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.587177276611328,
+        -0.7608476281166077,
+        4.348972797393799
+      ],
+      "pth_logits": [
+        -3.5871777534484863,
+        -0.7608470916748047,
+        4.348974227905273
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 1.430511474609375e-06
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-26.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.0002980194689701451,
+        0.005956842231535862,
+        0.9937451382994941
+      ],
+      "pth_probs": [
+        0.000298018478541854,
+        0.005956828825739078,
+        0.9937451526957191
+      ],
+      "probability_diff": 1.4396224989887685e-08,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        874,
+        973,
+        1041,
+        1218
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        732,
+        764,
+        1183,
+        1427
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        732,
+        764,
+        1182,
+        1426
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.702082633972168,
+        -0.7069456577301025,
+        4.409994602203369
+      ],
+      "pth_logits": [
+        -3.702084541320801,
+        -0.7069464921951294,
+        4.409996032714844
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 1.9073486328125e-06
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-29.jpg",
+      "label": "live",
+      "onnx_probs": [
+        0.00041216561704616284,
+        0.006639635248622428,
+        0.9929481991343315
+      ],
+      "pth_probs": [
+        0.00041216571494738085,
+        0.006639636034220899,
+        0.9929481982508317
+      ],
+      "probability_diff": 8.834998288520524e-10,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        910,
+        985,
+        1082,
+        1229
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        763,
+        777,
+        1229,
+        1437
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        763,
+        777,
+        1228,
+        1436
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.521815538406372,
+        -0.7424284815788269,
+        4.265192985534668
+      ],
+      "pth_logits": [
+        -3.521815299987793,
+        -0.7424283623695374,
+        4.265192985534668
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 2.384185791015625e-07
+    },
+    {
+      "file": "live/photo_2026-10-01_13-46-33.jpg",
+      "label": "live",
+      "onnx_probs": null,
+      "pth_probs": null,
+      "probability_diff": null,
+      "same_predicted_class": null,
+      "our_crop_vs_upstream_crop_difference": null,
+      "error": "ComparisonError: expected one detected face, found 0"
+    },
+    {
+      "file": "spoof/photo_2026-10-01_13-45-14.jpg",
+      "label": "spoof",
+      "onnx_probs": [
+        0.00037419390971335476,
+        0.00599678987657873,
+        0.993629016213708
+      ],
+      "pth_probs": [
+        0.0003741922242318838,
+        0.005996766082155745,
+        0.9936290416936124
+      ],
+      "probability_diff": 2.5479904408598486e-08,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        749,
+        479,
+        910,
+        641
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        612,
+        341,
+        1047,
+        779
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        612,
+        341,
+        1046,
+        778
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.5525283813476562,
+        -0.7783229351043701,
+        4.331816673278809
+      ],
+      "pth_logits": [
+        -3.55253005027771,
+        -0.7783240675926208,
+        4.331819534301758
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 2.86102294921875e-06
+    },
+    {
+      "file": "spoof/photo_2026-10-01_13-45-17.jpg",
+      "label": "spoof",
+      "onnx_probs": [
+        0.00033571130404259794,
+        0.005941127633282789,
+        0.9937231610626747
+      ],
+      "pth_probs": [
+        0.0003357110626961602,
+        0.0059411315068749315,
+        0.9937231574304288
+      ],
+      "probability_diff": 3.8735921423574404e-09,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        702,
+        269,
+        1068,
+        551
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        390,
+        29,
+        1380,
+        791
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        390,
+        29,
+        1379,
+        790
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.621802806854248,
+        -0.7484001517295837,
+        4.371159553527832
+      ],
+      "pth_logits": [
+        -3.6218035221099854,
+        -0.7483994960784912,
+        4.371159553527832
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 7.152557373046875e-07
+    },
+    {
+      "file": "spoof/photo_2026-10-01_13-45-21.jpg",
+      "label": "spoof",
+      "onnx_probs": [
+        0.00028957033552835364,
+        0.005931095904873212,
+        0.9937793337595985
+      ],
+      "pth_probs": [
+        0.00028956999370958363,
+        0.005931084661360039,
+        0.9937793453449304
+      ],
+      "probability_diff": 1.1585331916030839e-08,
+      "same_predicted_class": true,
+      "our_crop_vs_upstream_crop_difference": 0.0,
+      "bbox_xyxy": [
+        809,
+        1157,
+        953,
+        1332
+      ],
+      "our_crop_coordinates_xyxy_exclusive": [
+        686,
+        1008,
+        1076,
+        1481
+      ],
+      "upstream_crop_coordinates_xyxy_inclusive": [
+        686,
+        1008,
+        1075,
+        1480
+      ],
+      "tensor_shape": [
+        1,
+        3,
+        80,
+        80
+      ],
+      "tensor_dtype": "float32",
+      "tensor_order": "NCHW from OpenCV BGR",
+      "onnx_logits": [
+        -3.719834566116333,
+        -0.7002685070037842,
+        4.421037673950195
+      ],
+      "pth_logits": [
+        -3.719834804534912,
+        -0.7002694606781006,
+        4.421038627624512
+      ],
+      "onnx_predicted_index": 2,
+      "pth_predicted_index": 2,
+      "max_absolute_logit_difference": 9.5367431640625e-07
+    }
+  ],
+  "summary": {
+    "images_found": 11,
+    "images_compared": 10,
+    "images_failed": 1,
+    "max_absolute_logit_difference": 2.86102294921875e-06,
+    "max_absolute_probability_difference": 2.5479904408598486e-08,
+    "all_predicted_classes_equal": true
+  }
+}

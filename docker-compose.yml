@@ -1,0 +1,175 @@
+name: amanat-face
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-amanat}
+      POSTGRES_USER: ${POSTGRES_USER:-amanat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.docker}
+      TZ: Asia/Bishkek
+      PGTZ: Asia/Bishkek
+
+    command:
+      - postgres
+      - -c
+      - timezone=Asia/Bishkek
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+    networks:
+      - backend_network
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      PRODUCTION: "0"
+
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8080"
+      APP_AUTO_PORT: "0"
+
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-amanat}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.docker}@db:5432/${POSTGRES_DB:-amanat}
+
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env.docker}
+
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+
+      TZ: Asia/Bishkek
+
+      FACE_DIR: face_database
+      SCREENSHOTS_DIR: screenshots
+      BACKUP_STATUS_FILE: /backups/backup-status.log
+
+      CAMERA_KELDI_SOURCE: ${CAMERA_KELDI_SOURCE:-}
+      CAMERA_KETTI_SOURCE: ${CAMERA_KETTI_SOURCE:-0}
+
+      RECOGNITION_WIDTH: ${RECOGNITION_WIDTH:-480}
+      RECOGNITION_INTERVAL_SECONDS: ${RECOGNITION_INTERVAL_SECONDS:-0.8}
+
+      WARM_UP_RECOGNITION: ${WARM_UP_RECOGNITION:-0}
+
+      LIVENESS_REQUIRED_SAMPLES: ${LIVENESS_REQUIRED_SAMPLES:-3}
+      LIVENESS_WINDOW_SECONDS: ${LIVENESS_WINDOW_SECONDS:-8.0}
+      FSVFM_ENABLED: ${FSVFM_ENABLED:-true}
+      FSVFM_SHADOW_MODE: ${FSVFM_SHADOW_MODE:-true}
+      FSVFM_CHECKPOINT: ${FSVFM_CHECKPOINT:-}
+      FSVFM_THRESHOLD: ${FSVFM_THRESHOLD:-0.50}
+
+    volumes:
+      - ./backend:/app/backend
+      - ./face_database:/app/face_database
+      - ./screenshots:/app/screenshots
+      - ./logs:/app/logs
+      - ./data/backups:/backups:ro
+      - model_cache:/home/app/.insightface
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    command:
+      [
+        "uvicorn",
+        "school_face_id.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080",
+        "--reload"
+      ]
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health', timeout=3)"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+    networks:
+      - backend_network
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - backend_network
+
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-amanat}
+      POSTGRES_USER: ${POSTGRES_USER:-amanat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.docker}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+
+    volumes:
+      - ./scripts/postgres_backup.sh:/scripts/postgres_backup.sh:ro
+      - ./data/backups:/backups
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    command: ["sh", "/scripts/postgres_backup.sh"]
+
+    networks:
+      - backend_network
+
+
+volumes:
+  postgres_data:
+  model_cache:
+
+
+networks:
+  backend_network:
+    driver: bridge

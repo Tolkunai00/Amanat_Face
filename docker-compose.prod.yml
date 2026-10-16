@@ -1,0 +1,251 @@
+name: amanat-face-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-amanat}
+      POSTGRES_USER: ${POSTGRES_USER:-amanat}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      TZ: ${TZ:-Asia/Bishkek}
+      PGTZ: ${TZ:-Asia/Bishkek}
+    command: ["postgres", "-c", "timezone=${TZ:-Asia/Bishkek}"]
+    secrets: [postgres_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [private]
+    logging: &production_logging
+      driver: json-file
+      options:
+        max-size: ${DOCKER_LOG_MAX_SIZE:-10m}
+        max-file: ${DOCKER_LOG_MAX_FILE:-5}
+    security_opt: [no-new-privileges:true]
+
+  backend:
+    image: amanat-face-backend:${RELEASE_VERSION:?Set immutable RELEASE_VERSION in .env.prod}
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      PRODUCTION: "1"
+      DEBUG: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      AUTO_MIGRATE: "false"
+      APP_HOST: 0.0.0.0
+      APP_PORT: "8080"
+      APP_AUTO_PORT: "0"
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-amanat}
+      POSTGRES_USER: ${POSTGRES_USER:-amanat}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_bootstrap_password
+      SESSION_SECRET_FILE: /run/secrets/session_secret
+      RELEASE_VERSION: ${RELEASE_VERSION:?Set immutable RELEASE_VERSION in .env.prod}
+      ALERTMANAGER_RECEIVER: ${ALERTMANAGER_RECEIVER:-}
+      DISK_WARNING_PERCENT: ${DISK_WARNING_PERCENT:-10}
+      DISK_CRITICAL_PERCENT: ${DISK_CRITICAL_PERCENT:-5}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS in .env.prod}
+      TZ: ${TZ:-Asia/Bishkek}
+      FACE_DIR: face_database
+      SCREENSHOTS_DIR: screenshots
+      BACKUP_STATUS_FILE: /backups/backup-status.log
+      OFFSITE_BACKUP_STATUS_FILE: /backups/offsite-status.json
+      FACE_MODEL_NAME: ${FACE_MODEL_NAME:?Set licensed FACE_MODEL_NAME in .env.prod}
+      FACE_MODEL_LICENSE: commercial
+      ANTI_SPOOFING_MODEL_PATH: /models/anti_spoof.onnx
+      ANTI_SPOOFING_MODEL_TYPE: ${ANTI_SPOOFING_MODEL_TYPE:-minifasnet_v2_80}
+      ANTI_SPOOFING_MODEL_SHA256: ${ANTI_SPOOFING_MODEL_SHA256:?Set verified ANTI_SPOOFING_MODEL_SHA256 in .env.prod}
+      ANTI_SPOOFING_CLASS_NAMES: ${ANTI_SPOOFING_CLASS_NAMES:-print,live,replay}
+      ANTI_SPOOFING_CACHE_TTL_SECONDS: ${ANTI_SPOOFING_CACHE_TTL_SECONDS:-2.0}
+      ANTI_SPOOFING_THRESHOLD: ${ANTI_SPOOFING_THRESHOLD:-0.80}
+      ANTI_SPOOFING_LIVE_INDEX: ${ANTI_SPOOFING_LIVE_INDEX:-1}
+      ANTI_SPOOFING_OUTPUT: ${ANTI_SPOOFING_OUTPUT:-logits}
+      FSVFM_ENABLED: ${FSVFM_ENABLED:-true}
+      FSVFM_SHADOW_MODE: ${FSVFM_SHADOW_MODE:-true}
+      FSVFM_CHECKPOINT: /models/fsvfm_vit_s_oci2m_run0.pth.tar
+      FSVFM_CHECKPOINT_SHA256: ${FSVFM_CHECKPOINT_SHA256:?Set verified FSVFM_CHECKPOINT_SHA256 in .env.prod}
+      FSVFM_THRESHOLD: ${FSVFM_THRESHOLD:-0.50}
+      CAMERA_KELDI_SOURCE: ${CAMERA_KELDI_SOURCE:?Set entrance RTSP URL in .env.prod}
+      CAMERA_KETTI_SOURCE: ${CAMERA_KETTI_SOURCE:?Set exit RTSP URL in .env.prod}
+      CAMERA_READ_MAX_SECONDS: ${CAMERA_READ_MAX_SECONDS:-7}
+      CAMERA_OFFLINE_TIMEOUT_SECONDS: ${CAMERA_OFFLINE_TIMEOUT_SECONDS:-30}
+      CAMERA_STALE_ENABLED: ${CAMERA_STALE_ENABLED:-true}
+      CAMERA_STALE_TIMEOUT_SECONDS: ${CAMERA_STALE_TIMEOUT_SECONDS:-10}
+      CAMERA_STALE_CONSECUTIVE_FRAMES: ${CAMERA_STALE_CONSECUTIVE_FRAMES:-30}
+      RECOGNITION_THRESHOLD: ${RECOGNITION_THRESHOLD:?Set calibrated threshold in .env.prod}
+      RECOGNITION_MARGIN: ${RECOGNITION_MARGIN:-0.06}
+      RECOGNITION_WIDTH: ${RECOGNITION_WIDTH:-480}
+      RECOGNITION_INTERVAL_SECONDS: ${RECOGNITION_INTERVAL_SECONDS:-0.8}
+      WARM_UP_RECOGNITION: "1"
+      LIVENESS_REQUIRED_SAMPLES: ${LIVENESS_REQUIRED_SAMPLES:-3}
+      LIVENESS_WINDOW_SECONDS: ${LIVENESS_WINDOW_SECONDS:-8.0}
+    secrets: [postgres_password, admin_bootstrap_password, session_secret]
+    volumes:
+      - ./face_database:/app/face_database
+      - ./screenshots:/app/screenshots
+      - ./logs:/app/logs
+      - ./data/backups:/backups:ro
+      - postgres_data:/monitored/postgres:ro
+      - model_cache:/home/app/.insightface
+      - ./deploy/models/anti_spoof.onnx:/models/anti_spoof.onnx:ro
+      - ./deploy/models/fsvfm_vit_s_oci2m_run0.pth.tar:/models/fsvfm_vit_s_oci2m_run0.pth.tar:ro
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["uvicorn", "school_face_id.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--proxy-headers", "--forwarded-allow-ips", "*", "--log-config", "/app/backend/logging.prod.json"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v1/health/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    networks: [private]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits: {cpus: "4.0", memory: 8G}
+
+  frontend:
+    image: amanat-face-frontend:${RELEASE_VERSION:?Set immutable RELEASE_VERSION in .env.prod}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+    networks: [private]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE, CHOWN, SETGID, SETUID]
+
+  gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env.prod}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/certs:/etc/nginx/tls:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-q", "--spider", "https://127.0.0.1/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+    networks: [private, edge]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE, CHOWN, SETGID, SETUID]
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-amanat}
+      POSTGRES_USER: ${POSTGRES_USER:-amanat}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      OFFSITE_BACKUP_MODE: ${OFFSITE_BACKUP_MODE:-none}
+      OFFSITE_BACKUP_DIR: /offsite
+      OFFSITE_BACKUP_STATUS_FILE: /backups/offsite-status.json
+      OFFSITE_S3_URI: ${OFFSITE_S3_URI:-}
+      OFFSITE_S3_UPLOADER: /scripts/upload_backup_s3.sh
+    secrets: [postgres_password]
+    volumes:
+      - ./scripts/postgres_backup.sh:/scripts/postgres_backup.sh:ro
+      - ./scripts/postgres_restore.sh:/scripts/postgres_restore.sh:ro
+      - ./scripts/upload_backup_s3.sh:/scripts/upload_backup_s3.sh:ro
+      - ./data/backups:/backups
+      - ${OFFSITE_BACKUP_DIR_HOST:-./data/offsite_backups}:/offsite
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "/scripts/postgres_backup.sh"]
+    networks: [private]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus", "--storage.tsdb.retention.time=30d"]
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:9090:9090"
+    networks: [private]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+    volumes:
+      - ${ALERTMANAGER_CONFIG_FILE:-./deploy/alertmanager/alertmanager.yml}:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    networks: [private]
+    logging: *production_logging
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "/bin/alertmanager", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+secrets:
+  postgres_password:
+    file: ./deploy/secrets/postgres_password
+  admin_bootstrap_password:
+    file: ./deploy/secrets/admin_bootstrap_password
+  session_secret:
+    file: ./deploy/secrets/session_secret
+
+volumes:
+  postgres_data:
+  model_cache:
+  prometheus_data:
+  alertmanager_data:
+
+networks:
+  private:
+    internal: true
+  edge:

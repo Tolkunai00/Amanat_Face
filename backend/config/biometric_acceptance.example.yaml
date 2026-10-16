@@ -1,0 +1,13 @@
+# Diagnostic acceptance limits. Approval must come from the responsible human
+# security owner; null values can never produce a passing model verdict.
+identity:
+  max_far: null                 # requires human/security approval
+  max_frr: null                 # requires human/security approval
+  max_eer: null                 # requires human/security approval
+  min_top1_accuracy: null       # requires human/security approval
+
+pad:
+  max_apcer: null               # requires human/security approval
+  max_bpcer: null               # requires human/security approval
+  max_acer: null                # requires human/security approval
+  max_failed_rate: null         # requires human/security approval

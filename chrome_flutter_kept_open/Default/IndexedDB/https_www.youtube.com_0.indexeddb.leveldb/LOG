@@ -1,5 +1,0 @@
-2026/09/11-15:34:54.230 4b5c Creating DB C:\Users\user\fice_amanat\chrome_flutter_kept_open\Default\IndexedDB\https_www.youtube.com_0.indexeddb.leveldb since it was missing.
-2026/09/11-15:34:54.237 4b5c Reusing MANIFEST C:\Users\user\fice_amanat\chrome_flutter_kept_open\Default\IndexedDB\https_www.youtube.com_0.indexeddb.leveldb/MANIFEST-000001
-2026/09/11-15:48:12.905 4540 Level-0 table #5: started
-2026/09/11-15:48:12.955 4540 Level-0 table #5: 1251665 bytes OK
-2026/09/11-15:48:12.958 4540 Delete type=0 #3

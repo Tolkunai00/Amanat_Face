@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amanat-school-face-id-backend"
+version = "0.1.0"
+description = "FastAPI backend for the Amanat school attendance system"
+requires-python = ">=3.10"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9", "httpx>=0.27,<1"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["school_face_id*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

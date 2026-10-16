@@ -1,0 +1,79 @@
+groups:
+  - name: amanat-production
+    rules:
+      # Conservative initial defaults. Tune only from measured school-day baselines.
+      - alert: BackendDown
+        expr: up{job="amanat-backend"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Amanat backend cannot be scraped"}
+      - alert: BackendNotReady
+        expr: amanat_backend_ready == 0
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Backend readiness dependencies are not ready"}
+      - alert: DatabaseUnavailable
+        expr: amanat_database_up == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "PostgreSQL is unavailable"}
+      - alert: MigrationMismatch
+        expr: amanat_migration_at_head == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Database migration is not at Alembic head"}
+      - alert: CameraOffline
+        expr: amanat_camera_offline == 1 or amanat_camera_connected == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Camera {{ $labels.camera }} is offline"}
+      - alert: CameraHighFailureRate
+        expr: rate(amanat_camera_frame_failures_total[10m]) / clamp_min(rate(amanat_camera_frames_total[10m]) + rate(amanat_camera_frame_failures_total[10m]), 0.001) > 0.10
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Camera frame failure ratio exceeds 10%"}
+      - alert: CameraReconnectStorm
+        expr: increase(amanat_camera_reconnects_total[15m]) > 5
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Camera reconnecting repeatedly"}
+      - alert: RecognitionErrorRateHigh
+        expr: rate(amanat_recognition_errors_total[10m]) / clamp_min(rate(amanat_recognition_total[10m]), 0.001) > 0.05
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Recognition error ratio exceeds 5%"}
+      - alert: AttendanceErrorRateHigh
+        expr: rate(amanat_attendance_errors_total[10m]) / clamp_min(rate(amanat_attendance_created_total[10m]) + rate(amanat_attendance_errors_total[10m]), 0.001) > 0.02
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Attendance write error ratio exceeds 2%"}
+      - alert: PADFailureRateHigh
+        expr: rate(amanat_pad_failures_total[15m]) / clamp_min(rate(amanat_pad_total[15m]), 0.001) > 0.30
+        for: 15m
+        labels: {severity: warning}
+        annotations: {summary: "PAD rejection ratio exceeds initial 30% operational threshold"}
+      - alert: HighPipelineLatency
+        expr: amanat_pipeline_latency_ms > 2000
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Average in-process pipeline latency exceeds 2 seconds"}
+      - alert: BackupTooOld
+        expr: amanat_backup_age_seconds < 0 or amanat_backup_age_seconds > 93600
+        for: 15m
+        labels: {severity: critical}
+        annotations: {summary: "No verified backup within 26 hours"}
+      - alert: OffsiteBackupFailure
+        expr: amanat_offsite_backup_success == 0
+        for: 30m
+        labels: {severity: warning}
+        annotations: {summary: "Latest offsite backup was not uploaded"}
+      - alert: DiskSpaceLow
+        expr: amanat_volume_free_ratio >= 0 and amanat_volume_free_ratio < on() amanat_disk_warning_threshold_ratio
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Free space below 10% on {{ $labels.volume }} volume"}
+      - alert: DiskSpaceCritical
+        expr: amanat_volume_free_ratio >= 0 and amanat_volume_free_ratio < on() amanat_disk_critical_threshold_ratio
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Free space below 5% on {{ $labels.volume }} volume"}

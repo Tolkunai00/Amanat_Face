@@ -1,0 +1,293 @@
+{
+  "diagnostic_only": true,
+  "production_pipeline_changed": false,
+  "production_threshold_changed": false,
+  "onnx_exported": false,
+  "checkpoint": {
+    "path": "C:\\Users\\user\\PycharmProjects\\Amanat_Face\\deploy\\models\\fsvfm_vit_s_oci2m_run0.pth.tar",
+    "sha256": "c594c083cb265c3bb39accda0e3f492e0b23d3c0cf7fc45fac2c94e8a5750b9d",
+    "validation": {
+      "absolute_path": "C:\\Users\\user\\PycharmProjects\\Amanat_Face\\deploy\\models\\fsvfm_vit_s_oci2m_run0.pth.tar",
+      "sha256": "c594c083cb265c3bb39accda0e3f492e0b23d3c0cf7fc45fac2c94e8a5750b9d",
+      "size_bytes": 87520439,
+      "checkpoint_keys": [
+        "best_model_ACC",
+        "best_model_ACER",
+        "best_model_EER",
+        "epoch",
+        "state_dict",
+        "threshold",
+        "valid_arg"
+      ],
+      "state_dict_summary": {
+        "key_count": 156,
+        "top_level_prefix_counts": {
+          "backbone": 150,
+          "classifier": 2,
+          "embedder": 4
+        },
+        "first_keys": [
+          "backbone.vit.cls_token",
+          "backbone.vit.pos_embed",
+          "backbone.vit.patch_embed.proj.weight",
+          "backbone.vit.patch_embed.proj.bias",
+          "backbone.vit.blocks.0.norm1.weight",
+          "backbone.vit.blocks.0.norm1.bias",
+          "backbone.vit.blocks.0.attn.qkv.weight",
+          "backbone.vit.blocks.0.attn.qkv.bias",
+          "backbone.vit.blocks.0.attn.proj.weight",
+          "backbone.vit.blocks.0.attn.proj.bias"
+        ],
+        "last_keys": [
+          "backbone.vit.blocks.11.mlp.fc2.weight",
+          "backbone.vit.blocks.11.mlp.fc2.bias",
+          "backbone.vit.fc_norm.weight",
+          "backbone.vit.fc_norm.bias",
+          "embedder.bottleneck_layer_fc.weight",
+          "embedder.bottleneck_layer_fc.bias",
+          "embedder.bottleneck_layer.0.weight",
+          "embedder.bottleneck_layer.0.bias",
+          "classifier.classifier_layer.weight",
+          "classifier.classifier_layer.bias"
+        ]
+      },
+      "non_strict_loading_result": {
+        "missing_keys": [],
+        "unexpected_keys": [],
+        "shape_mismatches": []
+      },
+      "missing_keys": [],
+      "unexpected_keys": [],
+      "strict_loading_result": "success",
+      "checkpoint_metadata": {
+        "epoch": 28,
+        "valid_arg": [
+          0.25006703248891293,
+          "tensor([93.4615])",
+          0.034166666666666665,
+          0.034166666666666665,
+          0.9965,
+          0.9806,
+          96.53846153846153,
+          0.9
+        ],
+        "best_model_EER": 0.03417,
+        "best_model_ACER": 1.0,
+        "best_model_ACC": 96.53846153846153,
+        "threshold": 0.9806
+      }
+    }
+  },
+  "alignment": {
+    "landmarks": "InsightFace five-point kps",
+    "geometry": "five-point similarity transform",
+    "padding": 0.37,
+    "output_size": 224
+  },
+  "threshold_note": "All thresholds are diagnostic reporting cutoffs only.",
+  "summary": {
+    "images_found": 222,
+    "images_evaluated": 206,
+    "images_failed": 16,
+    "groups": {
+      "live": {
+        "count": 139,
+        "evaluated": 134,
+        "failed": 5,
+        "bbox_live_score": {
+          "mean": 0.9021014860209744,
+          "min": 4.945746334705997e-05,
+          "max": 0.9999966496006825
+        },
+        "aligned_live_score": {
+          "mean": 0.8921093763680382,
+          "min": 1.9762461836204803e-05,
+          "max": 0.999996812263025
+        },
+        "delta": {
+          "mean": -0.009992109652936133,
+          "min": -0.9940706097901125,
+          "max": 0.26311179967812504
+        }
+      },
+      "phone_photo": {
+        "count": 48,
+        "evaluated": 47,
+        "failed": 1,
+        "bbox_live_score": {
+          "mean": 0.3902618987961918,
+          "min": 1.8194842407139377e-06,
+          "max": 0.9992795997713133
+        },
+        "aligned_live_score": {
+          "mean": 0.3113170030430725,
+          "min": 1.6043685796929957e-06,
+          "max": 0.994753332347952
+        },
+        "delta": {
+          "mean": -0.07894489575311923,
+          "min": -0.8492422038258582,
+          "max": 0.8585922864845199
+        }
+      },
+      "laptop_photo": {
+        "count": 35,
+        "evaluated": 25,
+        "failed": 10,
+        "bbox_live_score": {
+          "mean": 0.6736411019631976,
+          "min": 9.032660781804442e-06,
+          "max": 0.9999666250176072
+        },
+        "aligned_live_score": {
+          "mean": 0.5115657262304176,
+          "min": 7.100832924873e-06,
+          "max": 0.9999484959623585
+        },
+        "delta": {
+          "mean": -0.16207537573278,
+          "min": -0.9631654345909183,
+          "max": 0.121965379697606
+        }
+      }
+    },
+    "diagnostic_thresholds": {
+      "bbox": {
+        "0.3": {
+          "BPCER": 0.07462686567164178,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.425531914893617,
+            "laptop_photo": 0.72,
+            "combined": 0.5277777777777778
+          }
+        },
+        "0.5": {
+          "BPCER": 0.08955223880597014,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.40425531914893614,
+            "laptop_photo": 0.68,
+            "combined": 0.5
+          }
+        },
+        "0.7": {
+          "BPCER": 0.11940298507462686,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.3829787234042553,
+            "laptop_photo": 0.64,
+            "combined": 0.4722222222222222
+          }
+        }
+      },
+      "aligned": {
+        "0.3": {
+          "BPCER": 0.08955223880597014,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.3617021276595745,
+            "laptop_photo": 0.56,
+            "combined": 0.4305555555555556
+          }
+        },
+        "0.5": {
+          "BPCER": 0.11194029850746269,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.3191489361702128,
+            "laptop_photo": 0.52,
+            "combined": 0.3888888888888889
+          }
+        },
+        "0.7": {
+          "BPCER": 0.11940298507462686,
+          "live_samples": 134,
+          "APCER": {
+            "phone_photo": 0.2765957446808511,
+            "laptop_photo": 0.44,
+            "combined": 0.3333333333333333
+          }
+        }
+      }
+    },
+    "overlap": {
+      "bbox": {
+        "phone_photo": {
+          "live_range": [
+            4.945746334705997e-05,
+            0.9999966496006825
+          ],
+          "spoof_range": [
+            1.8194842407139377e-06,
+            0.9992795997713133
+          ],
+          "intersection": [
+            4.945746334705997e-05,
+            0.9992795997713133
+          ],
+          "intersection_width": 0.9992301423079663,
+          "intersection_over_union_width": 0.9992353082381571,
+          "live_inside_spoof_range": 0.22388059701492538,
+          "spoof_inside_live_range": 0.8723404255319149
+        },
+        "laptop_photo": {
+          "live_range": [
+            4.945746334705997e-05,
+            0.9999966496006825
+          ],
+          "spoof_range": [
+            9.032660781804442e-06,
+            0.9999666250176072
+          ],
+          "intersection": [
+            4.945746334705997e-05,
+            0.9999666250176072
+          ],
+          "intersection_width": 0.9999171675542602,
+          "intersection_over_union_width": 0.9999295497419697,
+          "live_inside_spoof_range": 0.41044776119402987,
+          "spoof_inside_live_range": 0.96
+        }
+      },
+      "aligned": {
+        "phone_photo": {
+          "live_range": [
+            1.9762461836204803e-05,
+            0.999996812263025
+          ],
+          "spoof_range": [
+            1.6043685796929957e-06,
+            0.994753332347952
+          ],
+          "intersection": [
+            1.9762461836204803e-05,
+            0.994753332347952
+          ],
+          "intersection_width": 0.9947335698861158,
+          "intersection_over_union_width": 0.994738336777225,
+          "live_inside_spoof_range": 0.17164179104477612,
+          "spoof_inside_live_range": 0.9148936170212766
+        },
+        "laptop_photo": {
+          "live_range": [
+            1.9762461836204803e-05,
+            0.999996812263025
+          ],
+          "spoof_range": [
+            7.100832924873e-06,
+            0.9999484959623585
+          ],
+          "intersection": [
+            1.9762461836204803e-05,
+            0.9999484959623585
+          ],
+          "intersection_width": 0.9999287335005222,
+          "intersection_over_union_width": 0.99993902144304,
+          "live_inside_spoof_range": 0.373134328358209,
+          "spoof_inside_live_range": 0.96
+        }
+      }
+    }
+  }
+}
