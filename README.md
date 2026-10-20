@@ -8,6 +8,23 @@ frontend/  Vite UI; the development server proxies /api/v1
 flutter/   location for the Flutter client
 ```
 
+## Simple local demo: SQLite + Docker
+
+For a disposable local demo, use the existing opt-in SQLite test mode with
+credentials and camera URLs from `.env`:
+
+```powershell
+docker compose --env-file .env -f docker-compose.local.yml up -d
+```
+
+Open `http://localhost:5173`. The database is stored in
+`data/school-local.db`; development migrations run automatically on startup.
+This starts a separate empty SQLite database and does not copy PostgreSQL data.
+Existing PostgreSQL volumes are preserved. Stop unused PostgreSQL services with
+`docker compose --env-file .env stop db backup` when switching to this mode.
+Use the same `-f docker-compose.local.yml` option for subsequent local restarts.
+This mode is for local demos only; deployed applications use PostgreSQL.
+
 ## Development: Vite + Docker backend
 
 Create the private environment file once:

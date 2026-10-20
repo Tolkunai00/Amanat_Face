@@ -6,8 +6,7 @@ import secrets
 import numpy as np
 
 from ..config.settings import (
-    FACE_DIR, FACE_MAX_BRIGHTNESS, FACE_MAX_ENROLLMENT_SAMPLES,
-    FACE_MIN_BLUR_SCORE, FACE_MIN_BRIGHTNESS, FACE_MIN_ENROLLMENT_SAMPLES,
+    FACE_DIR, FACE_MAX_ENROLLMENT_SAMPLES, FACE_MIN_ENROLLMENT_SAMPLES,
     PROJECT_ROOT,
 )
 from ..repositories import students as student_repository
@@ -56,34 +55,17 @@ def list_students() -> list[dict]:
 
 
 def embedding_for(image):
-    import cv2
     from ..recognition.camera_service import analyze_faces
     from ..recognition.embedding import InvalidEmbeddingError, embedding_from_face
 
     if image is None or image.size == 0:
         raise FaceQualityError("Image is empty or damaged")
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    brightness = float(np.mean(gray))
-    blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-    if blur_score < FACE_MIN_BLUR_SCORE:
-        raise FaceQualityError(
-            f"Image is too blurry ({blur_score:.1f}; minimum {FACE_MIN_BLUR_SCORE:.1f})"
-        )
-    if brightness < FACE_MIN_BRIGHTNESS:
-        raise FaceQualityError("Image is too dark")
-    if brightness > FACE_MAX_BRIGHTNESS:
-        raise FaceQualityError("Image is too bright")
     faces = analyze_faces(image, "accurate")
     if not faces:
         raise FaceNotFoundError("Face was not found")
     if len(faces) != 1:
         raise FaceQualityError("Image must contain exactly one face")
     face = faces[0]
-    x1, y1, x2, y2 = face.bbox.astype(int)
-    image_area = max(1, image.shape[0] * image.shape[1])
-    face_area = max(0, x2 - x1) * max(0, y2 - y1)
-    if face_area / image_area < .04:
-        raise FaceQualityError("Face is too small; move closer to the camera")
     try:
         embedding = embedding_from_face(face)
     except InvalidEmbeddingError as exc:
@@ -178,15 +160,25 @@ def student_photo_path(student_id: str) -> Path:
 def create_student(
     name, class_name, parent_name, parent_password, image,
     parent_login="", parent_phone="", parent_relationship="guardian",
+    enrollment_images=(),
 ) -> dict:
     student_name = validate_new_student(name)
     embedding = embedding_for(image)
+    if 1 + len(enrollment_images) > FACE_MAX_ENROLLMENT_SAMPLES:
+        raise FaceQualityError("Too many enrollment photos")
+    additional_embeddings = []
+    for angle, sample in enrollment_images:
+        try:
+            additional_embeddings.append((angle, embedding_for(sample)))
+        except FaceNotFoundError as exc:
+            raise FaceQualityError(f"{angle}: {exc}") from exc
     photo_path = save_photo(image, student_name)
     created = student_repository.save_student(
         student_name,
         class_name.strip(),
         photo_path,
         embedding,
+        additional_embeddings=additional_embeddings,
     )
     if not created:
         raise StudentConflictError("Student could not be created")
@@ -205,7 +197,8 @@ def create_student(
         except (parent_service.ParentValidationError, parent_service.ParentConflictError) as exc:
             student_repository.delete_student_by_id(created["id"])
             raise StudentConflictError(str(exc)) from exc
-    return {"status": "created", **created}
+    refresh_known_faces()
+    return {"status": "created", **created, "face_samples": 1 + len(additional_embeddings)}
 
 
 def update_student(

@@ -26,7 +26,7 @@ def generate_student_number(cursor) -> str:
     return f"AMANAT-{number:06d}"
 
 
-def save_student(name, class_name, photo_path, embedding):
+def save_student(name, class_name, photo_path, embedding, additional_embeddings=()):
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -41,6 +41,11 @@ def save_student(name, class_name, photo_path, embedding):
             cur.execute(
                 "INSERT INTO face_embeddings (student_id, angle_label, embedding) VALUES (?, 'primary', ?)",
                 (student_id, np.asarray(embedding, dtype=np.float32).tobytes()),
+            )
+        for angle_label, sample in additional_embeddings:
+            cur.execute(
+                "INSERT INTO face_embeddings (student_id, angle_label, embedding) VALUES (?, ?, ?)",
+                (student_id, angle_label, np.asarray(sample, dtype=np.float32).tobytes()),
             )
         conn.commit()
         return {"id": student_id, "student_number": student_number}

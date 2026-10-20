@@ -310,7 +310,13 @@ function studentForm(student = null) {
       ${["mother", "father", "guardian", "other"].map((value) => `<option value="${value}" ${primaryParent?.relationship === value ? "selected" : ""}>${value}</option>`).join("")}
     </select></label>
     <label>Пароль родителя<input name="parent_password" type="password" value="" placeholder="Обязателен только для нового аккаунта"></label>
-    <label class="wide">Фото<input name="photo" type="file" accept="image/*" ${student ? "" : "required"}></label>
+    <label class="wide">${student ? "Основное фото" : "1. Фото спереди"}<input name="photo" type="file" accept="image/*" ${student ? "" : "required"}><small>Одно лицо, хорошее освещение, без фильтров.</small></label>
+    ${student ? "" : `
+      <p class="form-description wide">Добавьте три разных фото одного ученика. Поворачивайте голову слегка, примерно на 20–30°, чтобы оба глаза оставались видны. Фото с расстояния можно добавить четвёртым, если лицо на нём чёткое.</p>
+      <label>2. Поворот влево<input name="photo_left" type="file" accept="image/*" required></label>
+      <label>3. Поворот вправо<input name="photo_right" type="file" accept="image/*" required></label>
+      <label class="wide">4. С расстояния — необязательно<input name="photo_distance" type="file" accept="image/*"><small>Снимите с обычного расстояния у входа. Лицо должно оставаться хорошо различимым.</small></label>
+    `}
     <div class="form-actions wide"><button class="button primary">${student ? "Сохранить" : "Добавить"}</button>
       ${student ? '<button id="cancel-edit" class="button ghost" type="button">Отмена</button>' : ""}</div>
   </form>`;
@@ -340,12 +346,17 @@ async function renderStudents(editIndex = null, query = "", page = 1) {
   document.querySelector("#student-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const submitButton = event.currentTarget.querySelector('button[type="submit"], button:not([type])');
+    const originalLabel = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "Проверяем фотографии и сохраняем…";
     try {
       if (editing) await api.updateStudent(editing.id, form);
       else await api.createStudent(form);
       notify(editing ? "Ученик обновлён" : "Ученик добавлен");
       await renderStudents();
     } catch (error) { showError(error); }
+    finally { submitButton.disabled = false; submitButton.textContent = originalLabel; }
   });
   document.querySelector("#cancel-edit")?.addEventListener("click", () => renderStudents());
   document.querySelector("[data-list-search]").addEventListener("submit", (event) => {
@@ -379,7 +390,7 @@ async function renderStudentCard(student) {
       <article><span>События</span><strong>${events.length}</strong></article></div>
     <form id="face-samples-form" class="panel form-grid"><h2>Повторная регистрация лица</h2>
       <p class="form-description wide">Добавьте разные чёткие фотографии. Система проверит освещение, размытие и наличие ровно одного лица. Всего должно быть 3–5 образцов.</p>
-      <label class="wide">Новые фотографии<input name="photos" type="file" accept="image/*" multiple required></label>
+      <label class="wide">Новые фотографии<input name="photos" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,.gif" multiple required><small>Размер и поворот исправятся автоматически. На каждом фото должно быть одно лицо.</small></label>
       <div class="form-actions wide"><button class="button primary">Проверить и добавить</button></div></form>
     <section class="panel table-wrap"><h2>История посещений</h2><table><thead><tr><th>Время</th><th>Событие</th><th>Источник</th><th>Точность</th></tr></thead>
       <tbody>${events.map((event) => `<tr><td>${escapeHtml(event.timestamp)}</td><td>${escapeHtml(eventTypeLabel(event.event_type))}</td><td>${escapeHtml(event.source)}</td><td>${event.confidence == null ? "—" : escapeHtml(Number(event.confidence).toFixed(3))}</td></tr>`).join("") || '<tr><td colspan="4" class="empty">История пуста</td></tr>'}</tbody></table></section>`);

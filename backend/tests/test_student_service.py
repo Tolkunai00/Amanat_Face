@@ -75,7 +75,37 @@ def test_student_service_orchestrates_create_update_and_delete(monkeypatch):
     assert student_repository.get_student_id_by_name("Service Student Renamed") == student_id
 
     assert student_service.delete_student(student_id) == {"status": "deleted"}
-    assert refreshes == [True, True]
+    assert refreshes == [True, True, True]
+
+
+def test_multiview_enrollment_validates_before_creating_student(monkeypatch):
+    def validate(image):
+        if image == "bad":
+            raise student_service.FaceQualityError("Face was not found")
+        return embedding()
+
+    monkeypatch.setattr(student_service, "embedding_for", validate)
+    monkeypatch.setattr(student_service, "save_photo", lambda *args: pytest.fail("Saved invalid enrollment"))
+    with pytest.raises(student_service.FaceQualityError, match="right"):
+        student_service.create_student(
+            "Invalid multiview", "5A", "", "", "front",
+            enrollment_images=[("left", "left"), ("right", "bad")],
+        )
+    assert student_repository.get_student_id_by_name("Invalid multiview") is None
+
+
+def test_multiview_enrollment_saves_all_samples_and_refreshes(monkeypatch):
+    monkeypatch.setattr(student_service, "embedding_for", lambda image: embedding())
+    monkeypatch.setattr(student_service, "save_photo", lambda *args: "")
+    refreshes = []
+    monkeypatch.setattr(student_service, "refresh_known_faces", lambda: refreshes.append(True))
+    created = student_service.create_student(
+        "Multiview Student", "5A", "", "", object(),
+        enrollment_images=[("left", object()), ("right", object()), ("distance", object())],
+    )
+    assert created["face_samples"] == 4
+    assert student_repository.count_face_embeddings(created["id"]) == 4
+    assert refreshes == [True]
 
 
 def test_student_service_rejects_empty_names_and_allows_duplicates():
