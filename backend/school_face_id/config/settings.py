@@ -215,6 +215,7 @@ FACE_MIN_ENROLLMENT_SAMPLES = env_int("FACE_MIN_ENROLLMENT_SAMPLES", 3)
 FACE_MAX_ENROLLMENT_SAMPLES = env_int("FACE_MAX_ENROLLMENT_SAMPLES", 5)
 
 CAMERA_INDEXES = {
+    "classroom": env_camera_source("CAMERA_CLASSROOM_SOURCE", ""),
     "keldi": env_camera_source("CAMERA_KELDI_SOURCE", ""),
     # Both directions accept either a local device index (0, 1, ...) or a
     # complete RTSP URL kept in the private runtime environment.

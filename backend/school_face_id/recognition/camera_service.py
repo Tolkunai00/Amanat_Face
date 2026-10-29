@@ -236,10 +236,13 @@ class CameraWorker:
 
     def start(self):
         with self.condition:
+            if self.source is None or self.source == "":
+                self._publish_unavailable("Camera not configured")
+                return
             if self.thread is not None and self.thread.is_alive():
                 return
             self.running = True
-            if self.recognition_thread is None or not self.recognition_thread.is_alive():
+            if not self.status_name.startswith("classroom") and (self.recognition_thread is None or not self.recognition_thread.is_alive()):
                 self.recognition_thread = threading.Thread(
                     target=self._recognition_loop,
                     name=f"camera-recognition-{self.status_name}",
@@ -470,7 +473,7 @@ class CameraWorker:
             self.reconnect_delay = 1.0
             self._set_state("working")
             now = time.monotonic()
-            if now - self.last_recognition >= RECOGNITION_INTERVAL_SECONDS:
+            if not self.status_name.startswith("classroom") and now - self.last_recognition >= RECOGNITION_INTERVAL_SECONDS:
                 self.last_recognition = now
                 with self.condition:
                     # One latest frame, never an unbounded inference backlog.
@@ -1146,7 +1149,7 @@ def camera_frames(status, camera_index, allowed_classes=None):
 def camera_statuses(camera_sources):
     return [
         get_camera_worker(status, source).public_status()
-        for status, source in camera_sources.items()
+        for status, source in list(camera_sources.items())
     ]
 
 
@@ -1155,7 +1158,7 @@ def camera_health_statuses(camera_sources):
     with workers_lock:
         current = dict(camera_workers)
     statuses = []
-    for camera_id in camera_sources:
+    for camera_id in list(camera_sources):
         worker = current.get(camera_id)
         if worker is not None:
             statuses.append(worker.public_status())

@@ -70,6 +70,8 @@ async def lifespan(_: FastAPI):
     from .recognition.fsvfm_pad import initialize_fsvfm_for_startup
     initialize_fsvfm_for_startup()
     from .recognition.camera_service import start_camera_workers, shutdown_camera_workers
+    from .services.camera_settings import load_camera_settings
+    load_camera_settings()
     start_camera_workers(CAMERA_INDEXES)
     if WARM_UP_RECOGNITION:
         warm_up_recognition_in_background()

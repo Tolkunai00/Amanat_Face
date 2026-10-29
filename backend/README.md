@@ -16,7 +16,21 @@ Versioned client contract: `/api/v1`.
 
 ## Camera connection (USB or IP/RTSP)
 
-Both entrance and exit cameras are configured only through the private runtime
+Administrators can configure the entrance and exit IP cameras on the Camera page.
+The separate Classroom page supports multiple named cameras with independent
+settings and deletion. Existing single-classroom settings remain compatible.
+Its grid refreshes snapshots once per second; Open video starts a continuous
+stream for the selected camera. Classroom cameras never run face recognition
+or create entrance/exit attendance events.
+Enter the IP, RTSP port, username, password and stream path, then test the video
+and save. For the configured Cootli model the stream path is `/V_ENC_000`.
+An empty password field preserves the existing password. Saved settings override
+the environment camera sources and take effect without a backend restart.
+They persist in the private `data/camera-settings.json` file; preserve this data
+directory across container recreation. Camera passwords are never returned by
+the configuration API. The backend must have network access to the cameras.
+
+As an alternative, configure entrance and exit cameras through the private runtime
 environment. The application never returns camera passwords through its API or
 frontend. Use a numeric source for a local USB camera:
 

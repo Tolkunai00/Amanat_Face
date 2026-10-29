@@ -1,5 +1,5 @@
 // Each page owns its streams, retry timers, and browser event listeners.
-export function connectCameraFeeds(images, baseUrl, browser = window) {
+export function connectCameraFeeds(images, baseUrl, browser = window, endpoint = "feed") {
   let disposed = false;
   const feeds = Array.from(images, (image) => {
     let timer = null;
@@ -8,7 +8,7 @@ export function connectCameraFeeds(images, baseUrl, browser = window) {
       if (disposed) return;
       browser.clearTimeout(timer);
       timer = null;
-      image.src = `${baseUrl}/api/v1/camera/feed?status=${encodeURIComponent(image.dataset.cameraFeed)}&t=${Date.now()}`;
+      image.src = `${baseUrl}/api/v1/camera/${endpoint}?status=${encodeURIComponent(image.dataset.cameraFeed)}&t=${Date.now()}`;
     };
     const failed = () => {
       if (disposed || timer !== null) return;

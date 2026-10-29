@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { connectCameraFeeds } from "../src/cameraFeeds.js";
 
-function fixture() {
+function fixture(endpoint = "feed") {
   const timers = new Map();
   let nextTimer = 0;
   const browser = Object.assign(new EventTarget(), {
@@ -14,9 +14,17 @@ function fixture() {
     dataset: { cameraFeed: "keldi" }, src: "/initial-feed",
     removeAttribute() { this.src = ""; },
   });
-  const feeds = connectCameraFeeds([image], "", browser);
+  const feeds = connectCameraFeeds([image], "", browser, endpoint);
   return { timers, browser, image, feeds };
 }
+
+test("classroom previews retry snapshots without opening persistent feeds", () => {
+  const { image, feeds } = fixture("snapshot");
+  feeds.retry("keldi");
+  assert.match(image.src, /^\/api\/v1\/camera\/snapshot\?status=keldi&t=\d+$/);
+  feeds.dispose();
+  assert.equal(image.src, "");
+});
 
 test("retries a failed stream once with bounded backoff", () => {
   const { image, timers, feeds } = fixture();

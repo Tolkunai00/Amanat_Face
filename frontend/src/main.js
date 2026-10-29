@@ -2,6 +2,7 @@ import "./styles.css";
 import { connectCameraFeeds } from "./cameraFeeds.js";
 import { API_BASE_URL, ApiError, api, openProtectedPhoto } from "./api.js";
 import { connectNotificationsSocket, disconnectNotificationsSocket } from "./notificationsSocket.js";
+import { renderReportsPage } from "./reportsPage.js";
 
 const app = document.querySelector("#app");
 const state = { session: null, students: [], activeView: "dashboard", unreadCount: 0, cameraTimer: null };
@@ -9,6 +10,8 @@ let cameraFeeds = null;
 let cameraPollAbort = null;
 
 function stopCameraView() {
+  window.clearInterval(state.cameraPreviewTimer);
+  state.cameraPreviewTimer = null;
   if (state.cameraTimer) window.clearInterval(state.cameraTimer);
   state.cameraTimer = null;
   cameraPollAbort?.abort();
@@ -167,7 +170,7 @@ function navigation() {
     ${admin ? '<button data-view="parents-admin">Родители</button>' : ""}
     ${admin ? '<button data-view="reports">Отчёты</button>' : ""}
     ${admin ? '<button data-view="audit">Аудит</button>' : ""}
-    ${admin ? '<button data-view="camera">Камера</button>' : ""}`;
+    ${admin ? '<button data-view="camera">Камера</button><button data-view="classroom">Аудитория</button>' : ""}`;
 }
 
 function renderShell() {
@@ -697,91 +700,110 @@ async function renderAudit(actor = "", entity = "", query = "", page = 1) {
 }
 
 async function renderReports() {
-  const today = new Date().toISOString().slice(0, 10);
-  const monthStart = `${today.slice(0, 8)}01`;
-  const yearStart = `${today.slice(0, 4)}-01-01`;
-  const yearEnd = `${today.slice(0, 4)}-12-31`;
-  const [classes, students, shifts, schedules, calendarDays] = await Promise.all([
-    api.classCatalog(), api.students(), api.shifts(), api.schedules(), api.calendar(yearStart, yearEnd),
-  ]);
-  setView(`<header class="page-header"><div><p class="eyebrow">Аналитика</p><h1>Отчёты посещаемости</h1></div></header>
-    <div class="settings-grid"><form id="shift-form" class="panel form-grid"><h2>Новая смена</h2>
-      <label class="wide">Название<input name="name" placeholder="Первая смена" required></label>
-      <label>Начало<input name="starts_at" type="time" required></label><label>Опоздание после<input name="late_after" type="time" required></label>
-      <label>Окончание<input name="ends_at" type="time" required></label>
-      <div class="form-actions wide"><button class="button primary">Добавить смену</button></div></form>
-      <form id="schedule-form" class="panel form-grid"><h2>Расписание класса</h2>
-        <label>Класс<select name="class_id" required>${classes.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select></label>
-        <label>День<select name="weekday">${WEEKDAYS.map((label, index) => `<option value="${index}">${label}</option>`).join("")}</select></label>
-        <label class="wide">Смена<select name="shift_id" required>${shifts.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.starts_at.slice(0, 5))}</option>`).join("")}</select></label>
-        <div class="form-actions wide"><button class="button primary" ${!shifts.length ? "disabled" : ""}>Сохранить расписание</button></div></form>
-      <form id="calendar-form" class="panel form-grid"><h2>Выходной или праздник</h2>
-        <label>Дата<input name="date" type="date" value="${today}" required></label>
-        <label>Тип<select name="is_school_day"><option value="false">Нет занятий</option><option value="true">Учебный день</option></select></label>
-        <label class="wide">Название<input name="title" placeholder="Праздник, каникулы или перенос"></label>
-        <div class="form-actions wide"><button class="button primary">Сохранить день</button></div>
-        <div class="calendar-list wide">${calendarDays.map((item) => `<span><strong>${escapeHtml(item.date)}</strong> · ${item.is_school_day ? "учебный день" : "нет занятий"}${item.title ? ` · ${escapeHtml(item.title)}` : ""}</span>`).join("") || '<span class="empty">Особые дни не заданы</span>'}</div></form></div>
-    <section class="panel table-wrap"><div class="panel-heading"><div><p class="eyebrow">Настройки</p><h2>Текущее расписание</h2></div><span class="count-badge">${schedules.length}</span></div>
-      <table><thead><tr><th>Класс</th><th>День</th><th>Смена</th><th>Начало</th><th>Опоздание после</th><th>Окончание</th></tr></thead>
-      <tbody>${schedules.map((item) => `<tr><td>${escapeHtml(item.class_name)}</td><td>${escapeHtml(WEEKDAYS[item.weekday])}</td><td>${escapeHtml(item.shift_name)}</td><td>${escapeHtml(item.starts_at)}</td><td>${escapeHtml(item.late_after)}</td><td>${escapeHtml(item.ends_at)}</td></tr>`).join("") || '<tr><td colspan="6" class="empty">Сначала создайте смену и расписание</td></tr>'}</tbody></table></section>
-    <form id="report-form" class="panel form-grid"><label>С<input name="date_from" type="date" value="${monthStart}" required></label>
-      <label>По<input name="date_to" type="date" value="${today}" required></label>
-      <label>Класс<select name="class_id"><option value="">Все классы</option>${classes.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join("")}</select></label>
-      <label>Ученик<select name="student_id"><option value="">Все ученики</option>${students.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.class_name)}</option>`).join("")}</select></label>
-      <div class="form-actions wide"><button class="button primary">Сформировать</button><button id="export-csv" class="button" type="button">CSV</button><button id="export-xlsx" class="button" type="button">Excel</button></div></form>
-    <section id="report-result" class="panel table-wrap"><p class="empty">Выберите период</p></section>
-    <form id="correction-form" class="panel form-grid"><h2>Ручное исправление</h2>
-      <label>Ученик<select name="student_id" required>${students.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.class_name)}</option>`).join("")}</select></label>
-      <label>Дата<input name="date" type="date" value="${today}" required></label>
-      <label>Статус<select name="status"><option value="present">Присутствовал</option><option value="late">Опоздал</option><option value="absent">Отсутствовал</option><option value="excused">Уважительная причина</option></select></label>
-      <label>Приход<input name="arrived_at" type="time"></label><label>Уход<input name="left_at" type="time"></label>
-      <label class="wide">Обязательная причина<input name="reason" minlength="3" required></label>
-      <div class="form-actions wide"><button class="button primary">Сохранить исправление</button></div></form>`);
-  document.querySelector("#shift-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    try { await api.createShift(Object.fromEntries(new FormData(event.currentTarget).entries())); notify("Смена добавлена"); await renderReports(); } catch (error) { showError(error); }
-  });
-  document.querySelector("#schedule-form").addEventListener("submit", async (event) => {
-    event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget).entries()); values.weekday = Number(values.weekday);
-    try { await api.setSchedule(values); notify("Расписание сохранено"); await renderReports(); } catch (error) { showError(error); }
-  });
-  document.querySelector("#calendar-form").addEventListener("submit", async (event) => {
-    event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget).entries()); values.is_school_day = values.is_school_day === "true";
-    try { await api.setCalendarDay(values); notify("Календарь обновлён"); } catch (error) { showError(error); }
-  });
-  const form = document.querySelector("#report-form");
-  const params = () => new FormData(form);
-  const renderRows = async () => {
-    const data = params(); const rows = await api.attendanceReport(data.get("date_from"), data.get("date_to"), data.get("class_id"), data.get("student_id"));
-    document.querySelector("#report-result").innerHTML = `<table><thead><tr><th>Дата</th><th>Ученик</th><th>Класс</th><th>Статус</th><th>Приход</th><th>Уход</th><th>Причина</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${escapeHtml(row.date)}</td><td>${escapeHtml(row.student_name)}</td><td>${escapeHtml(row.class_name)}</td><td>${escapeHtml(row.status)}</td><td>${escapeHtml(row.arrived_at || "—")}</td><td>${escapeHtml(row.left_at || "—")}</td><td>${escapeHtml(row.reason || "—")}</td></tr>`).join("") || '<tr><td colspan="7" class="empty">Нет данных</td></tr>'}</tbody></table>`;
-  };
-  form.addEventListener("submit", async (event) => { event.preventDefault(); try { await renderRows(); } catch (error) { showError(error); } });
-  const exportReport = (extension) => { const data = params(); window.open(`${API_BASE_URL}/api/v1/school-attendance/reports.${extension}?date_from=${encodeURIComponent(data.get("date_from"))}&date_to=${encodeURIComponent(data.get("date_to"))}&class_id=${encodeURIComponent(data.get("class_id"))}&student_id=${encodeURIComponent(data.get("student_id"))}`, "_blank"); };
-  document.querySelector("#export-csv").addEventListener("click", () => exportReport("csv"));
-  document.querySelector("#export-xlsx").addEventListener("click", () => exportReport("xlsx"));
-  document.querySelector("#correction-form").addEventListener("submit", async (event) => {
-    event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-    values.arrived_at ||= null; values.left_at ||= null;
-    try { await api.correctAttendance(values); notify("Исправление сохранено"); await renderRows(); } catch (error) { showError(error); }
-  });
+  return renderReportsPage({ setView, notify, showError, escapeHtml, isActive: () => state.activeView === "reports" });
+}
+function cameraConfigForm(config) {
+  return `<form class="panel form-grid" data-camera-config="${config.direction}">
+    <h2 id="camera-config-title-${config.direction}">${config.direction === "new" ? "Добавить камеру аудитории" : `Настройка камеры: ${escapeHtml(config.name || { keldi: "вход", ketti: "выход" }[config.direction] || "аудитория")}`}</h2>
+    ${!["keldi", "ketti"].includes(config.direction) ? `<label class="wide">Название камеры<input name="name" value="${escapeHtml(config.name || "")}" maxlength="100" placeholder="Например: Кабинет 201" required></label>` : ""}
+    <label>IP-адрес<input name="host" value="${escapeHtml(config.host)}" placeholder="192.168.0.100" required></label>
+    <label>RTSP-порт<input name="port" type="number" min="1" max="65535" value="${config.port}" required></label>
+    <label>Логин<input name="username" value="${escapeHtml(config.username)}" autocomplete="off"></label>
+    <label>Пароль<input name="password" type="password" autocomplete="new-password" placeholder="${config.has_password ? "Сохранён. Оставьте пустым, чтобы не менять" : "Пароль камеры"}"></label>
+    <label class="wide">Путь видеопотока<input name="path" value="${escapeHtml(config.path)}" placeholder="/V_ENC_000" required><small>Для вашей Cootli: /V_ENC_000. Для другой модели путь может отличаться.</small></label>
+    <div class="form-actions wide"><button type="button" class="button ghost" data-close-config>Закрыть</button><button type="button" class="button ghost" data-test-config>Проверить видео</button><button type="submit" class="button primary">Сохранить и подключить</button></div>
+    <p class="wide" data-config-result role="status" aria-live="polite"></p>
+  </form>`;
 }
 
-async function renderCamera() {
+async function renderCamera(classroom = false) {
+  const view = classroom ? "classroom" : "camera";
   const statuses = await api.cameraStatuses();
-  if (state.activeView !== "camera" || !state.session) return;
+  const configs = (await api.cameraConfigs()).filter((config) => classroom ? config.direction.startsWith("classroom") : ["keldi", "ketti"].includes(config.direction));
+  const dialogConfigs = classroom ? [...configs, { direction: "new", host: "", port: 554, username: "admin", path: "/V_ENC_000", has_password: false }] : configs;
+  if (state.activeView !== view || !state.session) return;
   setView(`
     <header class="page-header camera-page-header">
       <div>
         <p class="eyebrow">Face ID · наблюдение</p>
-        <h1>Камеры школы</h1>
-        <p class="page-description">Оба пропускных пункта отображаются одновременно</p>
+        <h1>${classroom ? "Аудитория" : "Камеры школы"}</h1>
+        <p class="page-description">${classroom ? "Предпросмотр обновляется раз в секунду. Нажмите «Открыть видео» для непрерывного потока." : "Оба пропускных пункта отображаются одновременно"}</p>
       </div>
-      <div class="live-indicator"><span></span> Прямой эфир</div>
+      ${classroom ? '<button type="button" class="button primary" data-edit-camera="new" aria-haspopup="dialog" aria-controls="camera-config-new">Добавить камеру</button>' : '<div class="live-indicator"><span></span> Прямой эфир</div>'}
     </header>
-    <section class="camera-grid" aria-label="Камеры входа и выхода">
-      ${cameraCard("keldi", "Вход", "Фиксирует приход учеников", "enter")}
-      ${cameraCard("ketti", "Выход", "Фиксирует уход учеников", "exit")}
-    </section>`);
+    <section class="camera-grid${classroom ? " camera-grid-vertical" : ""}" aria-label="${classroom ? "Камера аудитории" : "Камеры входа и выхода"}">
+      ${classroom ? configs.map((config) => cameraCard(config.direction, config.name || "Аудитория", "Видеонаблюдение в аудитории", "enter")).join("") || '<p class="panel empty">Камер пока нет. Нажмите «Добавить камеру» и укажите параметры подключения.</p>' : `
+        ${cameraCard("keldi", "Вход", "Фиксирует приход учеников", "enter")}
+        ${cameraCard("ketti", "Выход", "Фиксирует уход учеников", "exit")}
+      `}
+    </section>
+    ${dialogConfigs.map((config) => `<dialog class="camera-config-dialog" id="camera-config-${config.direction}" aria-labelledby="camera-config-title-${config.direction}">${cameraConfigForm(config)}</dialog>`).join("")}
+    ${classroom ? '<dialog class="camera-config-dialog" id="classroom-live-dialog" aria-label="Видео камеры аудитории"><div class="panel"><button type="button" class="button ghost" data-close-live>Закрыть видео</button><img data-live-image style="display:block;width:100%;margin-top:16px" alt="Видео камеры аудитории"></div></dialog>' : ""}`);
+
+  const liveDialog = document.querySelector("#classroom-live-dialog");
+  if (liveDialog) {
+    liveDialog.querySelector("[data-close-live]").addEventListener("click", () => liveDialog.close());
+    liveDialog.addEventListener("close", () => liveDialog.querySelector("img").removeAttribute("src"));
+    document.querySelectorAll("[data-live-camera]").forEach((button) => button.addEventListener("click", () => {
+      liveDialog.querySelector("img").src = `${API_BASE_URL}/api/v1/camera/feed?status=${encodeURIComponent(button.dataset.liveCamera)}`;
+      liveDialog.showModal();
+    }));
+  }
+
+  document.querySelectorAll("[data-delete-camera]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!window.confirm("Удалить эту камеру из аудитории?")) return;
+      button.disabled = true;
+      try {
+        await api.deleteClassroomCamera(button.dataset.deleteCamera);
+        if (state.activeView === view) { stopCameraView(); await renderCamera(true); }
+      } catch (error) { showError(error); button.disabled = false; }
+    });
+  });
+
+  document.querySelectorAll("[data-edit-camera]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelector(`#camera-config-${button.dataset.editCamera}`).showModal();
+    });
+  });
+
+  document.querySelectorAll("[data-camera-config]").forEach((form) => {
+    const dialog = form.closest("dialog");
+    form.querySelector("[data-close-config]").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => { form.elements.password.value = ""; });
+    const perform = async (save) => {
+      const direction = form.dataset.cameraConfig;
+      if (!form.reportValidity()) return;
+      const values = Object.fromEntries(new FormData(form));
+      values.port = Number(values.port);
+      const message = form.querySelector("[data-config-result]");
+      const buttons = form.querySelectorAll("button");
+      buttons.forEach((button) => { button.disabled = true; });
+      message.textContent = save ? "Сохраняем и подключаем…" : "Проверяем получение видео…";
+      try {
+        if (save) {
+          const result = direction === "new" ? await api.createClassroomCamera(values) : await api.saveCameraConfig(direction, values);
+          form.elements.password.value = "";
+          form.elements.password.placeholder = result.has_password ? "Сохранён. Оставьте пустым, чтобы не менять" : "Пароль камеры";
+          if (classroom) {
+            dialog.close();
+            if (state.activeView === view) { stopCameraView(); await renderCamera(true); notify("Камера сохранена"); }
+            return;
+          }
+          cameraFeeds?.retry(direction);
+          document.querySelector(`[data-edit-camera="${direction}"]`).textContent = "Изменить камеру";
+          message.textContent = "Настройки сохранены. Камера подключается автоматически.";
+        } else {
+          const result = await api.testCameraConfig(direction, values);
+          message.textContent = result.connected ? "Видео получено. Можно сохранить настройки." : "Видео не получено. Проверьте IP, порт, пароль, путь потока и доступ к сети камеры.";
+        }
+      } catch (error) {
+        message.textContent = typeof error.message === "string" ? error.message : "Не удалось выполнить действие";
+      } finally { buttons.forEach((button) => { button.disabled = false; }); }
+    };
+    form.addEventListener("submit", (event) => { event.preventDefault(); perform(true); });
+    form.querySelector("[data-test-config]").addEventListener("click", () => perform(false));
+  });
 
   const applyStatuses = (items) => items.forEach((status) => {
       const card = document.querySelector(`[data-camera-feed="${status.camera}"]`)?.closest(".camera-card");
@@ -792,11 +814,15 @@ async function renderCamera() {
       card.querySelector("[data-camera-error-detail]").textContent = status.error || "Проверьте подключение камеры";
     });
   applyStatuses(statuses);
-  cameraFeeds = connectCameraFeeds(document.querySelectorAll("[data-camera-feed]"), API_BASE_URL);
+  cameraFeeds = connectCameraFeeds(document.querySelectorAll("[data-camera-feed]"), API_BASE_URL, window, classroom ? "snapshot" : "feed");
   const currentFeeds = cameraFeeds;
+  if (classroom) state.cameraPreviewTimer = window.setInterval(() => {
+    if (cameraFeeds !== currentFeeds || document.hidden) return;
+    configs.forEach((config) => currentFeeds.retry(config.direction));
+  }, 1000);
   let polling = false;
   state.cameraTimer = window.setInterval(async () => {
-    if (state.activeView !== "camera" || polling || cameraFeeds !== currentFeeds) return;
+    if (state.activeView !== view || polling || cameraFeeds !== currentFeeds) return;
     polling = true;
     const controller = new AbortController();
     cameraPollAbort = controller;
@@ -835,23 +861,24 @@ async function renderCamera() {
   });
 }
 
-function cameraCard(status, title, description, variant) {
+function cameraCard(status, title, description, variant, configured = true) {
   return `<article class="camera-card camera-card-${variant}">
     <header class="camera-card-header">
       <div class="camera-title-group">
         <span class="camera-direction" aria-hidden="true">${variant === "enter" ? "↘" : "↗"}</span>
-        <div><h2>${title}</h2><p>${description}</p></div>
+        <div><h2>${escapeHtml(title)}</h2><p>${description}</p></div>
       </div>
       <span class="camera-state"><i></i><span data-camera-state>Подключение…</span></span>
     </header>
     <div class="camera-viewport">
-      <img data-camera-feed="${status}" src="${API_BASE_URL}/api/v1/camera/feed?status=${status}" alt="Камера: ${title.toLowerCase()}">
+      <img data-camera-feed="${status}" src="${API_BASE_URL}/api/v1/camera/${status.startsWith("classroom") ? "snapshot" : "feed"}?status=${status}" alt="Камера: ${escapeHtml(title.toLowerCase())}">
       <div class="camera-error-message">
         <strong>Поток недоступен</strong>
         <span data-camera-error-detail>Проверьте подключение камеры</span>
         <button class="button camera-retry" data-retry-camera="${status}" type="button">Подключить снова</button>
       </div>
     </div>
+    <footer class="camera-card-actions">${status.startsWith("classroom") ? `<button type="button" class="button ghost" data-live-camera="${status}" aria-haspopup="dialog">Открыть видео</button><button type="button" class="button danger" data-delete-camera="${status}">Удалить</button>` : ""}<button type="button" class="button ghost" data-edit-camera="${status}" aria-haspopup="dialog" aria-controls="camera-config-${status}">${configured ? "Изменить камеру" : "Добавить камеру"}</button></footer>
   </article>`;
 }
 
@@ -912,6 +939,7 @@ async function renderActiveView() {
       reports: renderReports,
       audit: renderAudit,
       camera: renderCamera,
+      classroom: () => renderCamera(true),
       parent: renderParent,
       notifications: renderNotifications,
     };

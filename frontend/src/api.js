@@ -57,6 +57,11 @@ export async function openProtectedPhoto(path) {
 }
 
 export const api = {
+  createClassroomCamera: (config) => apiRequest("/camera/classrooms", { method: "POST", body: JSON.stringify(config) }),
+  deleteClassroomCamera: (direction) => apiRequest(`/camera/classrooms/${encodeURIComponent(direction)}`, { method: "DELETE" }),
+  cameraConfigs: () => apiRequest("/camera/config"),
+  saveCameraConfig: (direction, config) => apiRequest(`/camera/config/${direction}`, { method: "PUT", body: JSON.stringify(config) }),
+  testCameraConfig: (direction, config) => apiRequest(`/camera/config/${direction}/test`, { method: "POST", body: JSON.stringify(config) }),
   me: () => apiRequest("/auth/me"),
   login: (login, password) => apiRequest("/auth/login", {
     method: "POST",
